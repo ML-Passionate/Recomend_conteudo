@@ -1,11 +1,17 @@
-""" Utilities for RecSysNN assigment """
+#
+#
+# Arquivos com funções uteis
+#
+#
 from collections import defaultdict
 import csv
 import numpy as np
 from numpy import genfromtxt
-import pickle5 as pickle
+from tabulate import tabulate  # Adicione esta linha no topo para importar corretamente
+import pickle as pickle
 import tabulate
 
+#%%
 
 def load_data():
     ''' called to load preprepared data for the lab '''
@@ -66,6 +72,37 @@ def pprint_train(x_train, features, vs, u_s, maxcount=5, user=True):
     table = tabulate.tabulate(disp, tablefmt='html', headers="firstrow", floatfmt=flist, numalign='center')
     return table
 
+def pprint_train_text(x_train, features, vs, u_s, maxcount=5, user=True):
+    """ Prints user_train or item_train nicely in a text table format """
+    if user:
+        flist = [".0f", ".0f", ".1f",
+                 ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f", ".1f"]
+    else:
+        flist = [".0f", ".0f", ".1f", 
+                 ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f", ".0f"]
+
+    head = features[:vs]
+    if vs < u_s: 
+        print(f"Error: vector start {vs} should be greater than user start {u_s}")
+    for i in range(u_s):
+        head[i] = "[" + head[i] + "]"
+    genres = features[vs:]
+    hdr = head + genres
+    disp = [split_str(hdr, 5)]
+    count = 0
+    for i in range(0, x_train.shape[0]):
+        if count == maxcount: 
+            break
+        count += 1
+        disp.append([
+            x_train[i, 0].astype(int),
+            x_train[i, 1].astype(int),
+            x_train[i, 2].astype(float),
+            *x_train[i, 3:].astype(float)
+        ])
+    # Change tablefmt to a text-based format (e.g., 'simple', 'plain', 'github')
+    table = tabulate.tabulate(disp, tablefmt='simple', headers="firstrow", floatfmt=flist, numalign='center')
+    return table
 
 def split_str(ifeatures, smax):
     ''' split the feature name strings to tables fit '''

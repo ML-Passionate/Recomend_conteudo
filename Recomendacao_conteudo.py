@@ -1,11 +1,12 @@
 #
+#
 #  Sistema de recomendação utilizando redes neurais, 
 #  baseado em embeddings de usuários e filmes. Uiliza o conjunto de dados MovieLens 
 #  para treinar um modelo que prevê classificações que um usuário daria a um filme. 
 #  Dados divididos em treino e validação, arquitetura de rede neural com Keras, treina o modelo, 
 #  avalia o desem-penho e gera gráficos com os resultados.
 #
-#
+#  dar pip install pickle5
 #
 
 #%%
@@ -16,88 +17,59 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
+from IPython.display import HTML, display, Markdown
 import tabulate
-from recsysNN_utils import *
+from utils import *
+
 pd.set_option("display.precision", 1)
 
-#%%
-"""
-<a name="2"></a>
-#### 2 - Movie ratings conjunto de dados <img align="left" src="./images/film_rating.png" style=" width:40px;" >
-The data set is derived from the [MovieLens ml-latest-small](https://grouplens.org/conjunto de dadoss/movielens/latest/) conjunto de dados. 
-
-[F. Maxnósll Harper and Joseph A. Konstan. 2015. The MovieLens Datasets: History and Context. ACM Transactions on Interactive Intelligent Systems (TiiS) 5, 4: 19:1–19:19. <https://doi.org/10.1145/2827872>]
-
-The original conjunto de dados has roughly 9000 movies rated by 600 usarrs with ratings on a scale of 0.5 to 5 in 0.5 step increments. The conjunto de dados has been reduced in size to focus on movies from the years since 2000 and popular genres. The reduced conjunto de dados has $n_u = 397$ usarrs, $n_m= 847$ movies and 25521 ratings. For each movie, the conjunto de dados provides a movie title, release date, and one or more genres. For example "Toy Story 3" was released in 2010 and has several genres: "Adventure|Animation|Children|Comedy|Fantasy". Este conjunto de dados contains little information about usarrs other than their ratings. Este conjunto de dados is usard to create training vectors for the neural networks described below. 
-Let's learn a bit more about this data set. The table below shows the top 10 movies ranked by the number of ratings. These movies also happen to have high average ratings. How many of these movies have você watched? 
-"""
 
 #%%
-top10_df = pd.read_csv("./data/content_top10_df.csv")
-bygenre_df = pd.read_csv("./data/content_bygenre_df.csv")
+#
+#  O dataset deriva do MovieLens ml-latest-small - https://grouplens.org/conjunto de dadoss/movielens/latest/
+#
+
+top10_df = pd.read_csv("data/content_top10_df.csv")
+bygenre_df = pd.read_csv("data/content_bygenre_df.csv")
 top10_df
 
 #%%
-"""
-The next table shows information sorted by genre. The number of ratings per genre vary substantially. Note that a movie may have multiple genre's so the sum of the ratings below is larger than the number of original ratings.
-"""
+#
+# a próxima tabela mostra a informação em ordem de genre
+#
 
-#%%
 bygenre_df
 
-#%%
-"""
-<a name="3"></a>
-#### 3 - Content-based filtering with a neural network
-
-In the collaborative filtering lab, você generated two vectors, a usarr vector and an item/movie vector whose dot product would predict a rating. The vectors nósre derived solely from the ratings.   
-
-Content-based filtering also generates a usarr and movie feature vector but recognizes there may be other information available about the usarr and/or movie that may improve the prediction. The additional information is provided to a neural network which then generates the usarr and movie vector as shown below.
-<figure>
-    <center> <img src="./images/RecSysNN.png"   style="width:500px;height:280px;" ></center>
-</figure>
-
-<a name="3.1"></a>
-###### 3.1 Training Data
-The movie content provided to the network is a combination of the original data and some 'engineered features'. Recall the feature engineering discussion and lab from Course 1, Week 2, lab 4. The original features are the year the movie was released and the movie's genre's presented as a one-hot vector. There are 14 genres. The engineered feature is an average rating derived from the usarr ratings. 
-
-The usarr content is composed of engineered features. A per genre average rating is computed per usarr. Additionally, a usarr id, rating count and rating average are available but not included in the training or prediction content. They are carried with the data set becausar they are usarful in interpreting data.
-
-The training set consists of all the ratings made by the usarrs in the data set. Some ratings are repeated to boost the number of training examples of underrepresented genre's. The training set is split into two arrays with the same number of entries, a usarr array and a movie/item array.  
-
-Below, let's load and display some of the data.
-"""
 
 #%%
+#
 # Carregar Data, set configuration variables
+#
+#
+
 item_train, user_train, y_train, item_features, user_features, item_vecs, movie_dict, user_to_genre = load_data()
 
-num_user_features = user_train.shape[1] - 3  # remove userid, rating count and ave rating during training
-num_item_features = item_train.shape[1] - 1  # remove movie id at train time
-uvs = 3  # user genre vector start
-ivs = 3  # item genre vector start
-u_s = 3  # start of columns to use in training, user
-i_s = 1  # start of columns to use in training, items
-print(f"Number of training vectors: {len(item_train)}")
+num_user_features = user_train.shape[1] - 3  # remove o userid, contagem de rating count e rating médio durante o treinamento 
+num_item_features = item_train.shape[1] - 1  # remove o movie id durante o treinamento
+uvs = 3  # inicio do vetor de usuario tipo de filme
+ivs = 3  # inicio do vetor de tipo de filme
+u_s = 3  # inicio das colunas usadas no treinamento, usuário
+i_s = 1  # inicio das colunas usadas no treinamento, items
+print(f"Numero de vetores de treinamento: {len(item_train)}")
 
 #%%
-"""
-Let's look at the first few entries in the usarr training array.
-"""
+#  Array de treinamento
+#
+
+tabela_texto_user = pprint_train_text(user_train, user_features, uvs,  u_s, maxcount=5)
+
+print(tabela_texto_user)
 
 #%%
-pprint_train(user_train, user_features, uvs,  u_s, maxcount=5)
 
-#%%
+tabela_texto_item = pprint_train_text(item_train, item_features, ivs, i_s, maxcount=5, user=False)
 
-"""
-Some of the usarr and item/movie features are not usard in training. In the table above, the features in brackets "[]" such as the "usarr id", "rating count" and "rating ave" are not included when the modelo is trained and usard.
-Above você can see the per genre rating average for usarr 2. Zero entries are genre's which the usarr had not rated. The usarr vector is the same for all the movies rated by a usarr.  
-Let's look at the first few entries of the movie/item array.
-"""
-
-#%%
-pprint_train(item_train, item_features, ivs, i_s, maxcount=5, user=False)
+print(tabela_texto_item)
 
 #%%
 """
@@ -105,27 +77,18 @@ Above, the movie array contains the year the film was released, the average rati
 """
 
 #%%
+
+#   Acima, o array de filmes contém o ano em que o filme foi lançado, a avaliação média e um indicador 
+#   para cada gênero possível. O indicador é igual a um para cada gênero que se aplica ao filme.
+#   O ID do filme não é usado no treinamento, mas é útil na interpretação dos dados.
+
 print(f"y_train[:5]: {y_train[:5]}")
 
-#%%
-"""
-The target, y, is the movie rating given by the usarr. 
-"""
 
 #%%
-"""
-Above, nós can see that movie 6874 is an Action/Crime/Thriller movie released in 2003. User 2 rates action movies as 3.9 on average. MovieLens usarrs gave the movie an average rating of 4. 'y' is 4 indicating usarr 2 rated movie 6874 as a 4 as nósll. A single training example consists of a row from both the usarr and item arrays and a rating from y_train.
-"""
-
-#%%
-"""
-<a name="3.2"></a>
-###### 3.2 Preparing the training data
-Recall in Course 1, Week 2, você explored feature scaling as a means of improving convergence. We'll scale the input features using the [scikit learn StandardScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html). Este was usard in Course 1, Week 2, Lab 5.  Below, the inverse_transform is also shown to produce the original inputs. We'll scale the target ratings using a Min Max Scaler which scales the target to be betnósen -1 and 1. [scikit learn MinMaxScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html)
-"""
-
-#%%
-# scale training data
+#
+# scale training 
+#
 item_train_unscaled = item_train
 user_train_unscaled = user_train
 y_train_unscaled    = y_train
@@ -147,16 +110,18 @@ print(np.allclose(item_train_unscaled, scalerItem.inverse_transform(item_train))
 print(np.allclose(user_train_unscaled, scalerUser.inverse_transform(user_train)))
 
 #%%
-"""
-To allow us to evaluate the results, nós iremos split the data into training and test sets as was discussed in Course 2, Week 3. Here nós iremos usar [sklean train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.modelo_selection.train_test_split.html) to split and shuffle the data. Note that setting the initial random state to the same value ensures item, usarr, and y are shuffled identically.
-"""
+#
+#   Para permitir que possamos avaliar os resultados, nós iremos dividir os dados em conjuntos de treino e teste, 
+#   nós iremos usar o train_test_split do sklearn para dividir e embaralhar os dados. 
+#   Note que definir o estado inicial aleatório com o mesmo valor garante que item, user e y sejam embaralhados de forma idêntica.
 
-#%%
+
 item_train, item_test = train_test_split(item_train, train_size=0.80, shuffle=True, random_state=1)
 user_train, user_test = train_test_split(user_train, train_size=0.80, shuffle=True, random_state=1)
 y_train, y_test       = train_test_split(y_train,    train_size=0.80, shuffle=True, random_state=1)
-print(f"movie/item training data shape: {item_train.shape}")
-print(f"movie/item test data shape: {item_test.shape}")
+
+print(f"Tamanho dos dados de treinamento: {item_train.shape}")
+print(f"Tamanho dos dados de teste: {item_test.shape}")
 
 #%%
 """
