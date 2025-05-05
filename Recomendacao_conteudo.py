@@ -1,39 +1,12 @@
-#%%
-"""
-## <img align="left" src="./images/film_strip_vertical.png"     style=" width:40px;  " > Practice lab: Deep Learning for Content-Based Filtering
-
-In this exercise, você iremos implement content-based filtering using a neural network to build a recommender system for movies. 
-
-
-## Outline
-- [ 1 - Packages ](##1)
-- [ 2 - Movie ratings conjunto de dados ](##2)
-- [ 3 - Content-based filtering with a neural network](##3)
-  - [ 3.1 Training Data](##3.1)
-  - [ 3.2 Preparing the training data](##3.2)
-- [ 4 - Neural Network for content-based filtering](##4)
-  - [ Exercise 1](##ex01)
-- [ 5 - Predictions](##5)
-  - [ 5.1 - Predictions for a new usarr](##5.1)
-  - [ 5.2 - Predictions for an existing usarr.](##5.2)
-  - [ 5.3 - Finding Similar Items](##5.3)
-    - [ Exercise 2](##ex02)
-- [ 6 - Congratulations! ](##6)
-
-"""
-
-#%%
-"""
-_**NOTE:** To prevent errors from the autograder, você are not allonósd to edit or delete non-graded cells in this lab. Please also refrain from adding any new cells. 
-**Once você have passed this assignment** and want to experiment with any of the non-graded code, você may follow the instructions at the bottom of this notebook._
-"""
-
-#%%
-"""
-<a name="1"></a>
-#### 1 - Packages <img align="left" src="./images/movie_camera.png"     style=" width:40px;  ">
-We iremos usar familiar packages, NumPy, TensorFlow and helpful routines from [scikit-learn](https://scikit-learn.org/stable/). We iremos also usar [tabulate](https://pypi.org/project/tabulate/) to neatly print tables and [Pandas](https://pandas.pydata.org/) to organize tabular data.
-"""
+#
+#  Sistema de recomendação utilizando redes neurais, 
+#  baseado em embeddings de usuários e filmes. Uiliza o conjunto de dados MovieLens 
+#  para treinar um modelo que prevê classificações que um usuário daria a um filme. 
+#  Dados divididos em treino e validação, arquitetura de rede neural com Keras, treina o modelo, 
+#  avalia o desem-penho e gera gráficos com os resultados.
+#
+#
+#
 
 #%%
 import numpy as np
@@ -116,6 +89,7 @@ Let's look at the first few entries in the usarr training array.
 pprint_train(user_train, user_features, uvs,  u_s, maxcount=5)
 
 #%%
+
 """
 Some of the usarr and item/movie features are not usard in training. In the table above, the features in brackets "[]" such as the "usarr id", "rating count" and "rating ave" are not included when the modelo is trained and usard.
 Above você can see the per genre rating average for usarr 2. Zero entries are genre's which the usarr had not rated. The usarr vector is the same for all the movies rated by a usarr.  
